@@ -94,13 +94,24 @@ echo "  ✅ UFW включён (22, 80, 443)"
 echo "[6/6] Установка пароля для ${DEPLOY_USER} (для VNC-аварийного доступа)..."
 VNC_PASS=$(openssl rand -base64 18 | tr -d '/+=' | head -c 20)
 echo "${DEPLOY_USER}:${VNC_PASS}" | sudo chpasswd
+# Сохраняем пароль в файл (чтобы не потерять)
+SECRETS_DIR="/srv/openclaw/secrets"
+mkdir -p "${SECRETS_DIR}"
+echo "VNC_USER=${DEPLOY_USER}" > "${SECRETS_DIR}/vnc-password.txt"
+echo "VNC_PASS=${VNC_PASS}" >> "${SECRETS_DIR}/vnc-password.txt"
+echo "CREATED=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> "${SECRETS_DIR}/vnc-password.txt"
+chmod 600 "${SECRETS_DIR}/vnc-password.txt"
+
 echo ""
-echo "  ╔══════════════════════════════════════╗"
-echo "  ║  СОХРАНИ ПАРОЛЬ ДЛЯ VNC:             ║"
+echo "  ╔══════════════════════════════════════════════╗"
+echo "  ║  ПАРОЛЬ ДЛЯ VNC (аварийный доступ):          ║"
 echo "  ║  Пользователь: ${DEPLOY_USER}"
 echo "  ║  Пароль: ${VNC_PASS}"
-echo "  ║  (только для VNC, SSH по паролю OFF)  ║"
-echo "  ╚══════════════════════════════════════╝"
+echo "  ║  (SSH по паролю отключён — это только для VNC ║"
+echo "  ║   консоли в панели хостинга)                  ║"
+echo "  ║                                               ║"
+echo "  ║  Сохранён в: ${SECRETS_DIR}/vnc-password.txt  ║"
+echo "  ╚══════════════════════════════════════════════╝"
 echo ""
 
 # --- Итог ---

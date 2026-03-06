@@ -156,6 +156,9 @@ alias claw-health='curl -s -o /dev/null -w "HTTP %{http_code}" http://127.0.0.1:
 ALIASES
 
 echo "  ✅ Алиасы добавлены: claw-stop, claw-start, claw-status, claw-restart, claw-logs, claw-health"
+echo ""
+echo "  💡 Разница: claw-start (алиас) запускает существующий контейнер."
+echo "     emergency-start.sh делает docker compose up -d (пересоздаёт если нужно)."
 
 # --- [8/8] Бэкап конфигов (cron) ---
 echo "[8/8] Настройка бэкапа конфигов..."
@@ -180,9 +183,12 @@ set -euo pipefail
 BACKUP_DIR="/srv/openclaw/config-backup"
 CONFIG_DIR="${OPENCLAW_CONFIG_DIR:-/home/deploy/.openclaw}"
 
-# Копируем актуальные конфиги (если существуют)
-[ -f "$CONFIG_DIR/openclaw.json" ] && cp "$CONFIG_DIR/openclaw.json" "$BACKUP_DIR/openclaw.json"
+# Копируем актуальные конфиги (sudo нужен — файлы принадлежат контейнерному пользователю)
+[ -f "$CONFIG_DIR/openclaw.json" ] && sudo cp "$CONFIG_DIR/openclaw.json" "$BACKUP_DIR/openclaw.json"
 [ -f "/srv/openclaw/repo/.env" ] && cp "/srv/openclaw/repo/.env" "$BACKUP_DIR/.env"
+
+# Убедиться что файлы принадлежат deploy
+sudo chown deploy:deploy "$BACKUP_DIR"/* 2>/dev/null || true
 
 cd "$BACKUP_DIR"
 git add -A

@@ -14,6 +14,18 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
+# --- Проверка ОС ---
+if ! command -v apt &>/dev/null; then
+    echo "ОШИБКА: Поддерживается только Ubuntu/Debian (нужен apt)"
+    exit 1
+fi
+OS_ID=$(. /etc/os-release && echo "${ID}")
+OS_VER=$(. /etc/os-release && echo "${VERSION_ID}")
+echo "  ОС: ${OS_ID} ${OS_VER}"
+if [[ "${OS_ID}" != "ubuntu" && "${OS_ID}" != "debian" ]]; then
+    echo "  ⚠️  Скрипты тестировались на Ubuntu 22.04+. На ${OS_ID} могут быть отличия."
+fi
+
 # --- Обновление системы ---
 echo "[1/5] Обновление системы..."
 apt update -qq && apt upgrade -y -qq

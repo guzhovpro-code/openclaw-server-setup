@@ -17,7 +17,15 @@
 
 1. **VPS-сервер** на Ubuntu 22.04 или новее (Hostinger, DigitalOcean, Hetzner и т.д.)
 2. **Claude Code** — [установите](https://docs.anthropic.com/en/docs/claude-code/overview), если ещё нет
-3. **API-ключ** от LLM-провайдера (OpenAI, Anthropic и т.д.) — понадобится при настройке OpenClaw
+3. **API-ключ от LLM-провайдера** — OpenClaw использует LLM для работы. Claude Code подскажет как получить ключ, но можно подготовить заранее:
+
+   | Провайдер | Где получить ключ | Примечание |
+   |-----------|-------------------|------------|
+   | **OpenAI** (рекомендуется) | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | Лучшая совместимость с OpenClaw |
+   | Anthropic | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) | |
+   | Google Gemini | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) | |
+
+   Claude Code проведёт через получение ключа пошагово, если не знаете как
 
 ## Как начать
 

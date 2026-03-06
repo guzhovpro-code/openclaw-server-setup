@@ -40,14 +40,21 @@ echo "[1/3] Установка Docker Engine..."
 # Удалить старые версии
 sudo apt remove -y -qq docker docker-engine docker.io containerd runc 2>/dev/null || true
 
+# Определяем дистрибутив (ubuntu или debian)
+DISTRO_ID=$(. /etc/os-release && echo "${ID}")
+if [[ "${DISTRO_ID}" != "ubuntu" && "${DISTRO_ID}" != "debian" ]]; then
+    echo "  ⚠️  Неизвестный дистрибутив: ${DISTRO_ID}, пробуем как ubuntu"
+    DISTRO_ID="ubuntu"
+fi
+
 # Репозиторий Docker
 sudo apt update -qq
 sudo apt install -y -qq ca-certificates curl gnupg
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL "https://download.docker.com/linux/${DISTRO_ID}/gpg" | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/${DISTRO_ID} $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
     sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt update -qq

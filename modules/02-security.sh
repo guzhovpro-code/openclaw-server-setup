@@ -33,9 +33,25 @@ if [ -d /etc/ssh/sshd_config.d ]; then
 fi
 echo "  ✅ Override-файлы отключены"
 
-# --- Хардинг SSH ---
+# --- Проверка SSH-ключей (КРИТИЧНО перед отключением паролей) ---
 echo "[3/6] Настройка SSH..."
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
+DEPLOY_HOME=$(eval echo "~${DEPLOY_USER}")
+
+if [ ! -f "${DEPLOY_HOME}/.ssh/authorized_keys" ] || [ ! -s "${DEPLOY_HOME}/.ssh/authorized_keys" ]; then
+    echo ""
+    echo "  ❌ СТОП! У пользователя ${DEPLOY_USER} нет SSH-ключей!"
+    echo "  Если отключить пароли сейчас — ты потеряешь доступ к серверу."
+    echo ""
+    echo "  Сначала добавь SSH-ключ:"
+    echo "    echo 'ssh-ed25519 AAAA...' >> ${DEPLOY_HOME}/.ssh/authorized_keys"
+    echo ""
+    echo "  Потом запусти этот модуль заново."
+    exit 1
+fi
+
+KEY_COUNT=$(wc -l < "${DEPLOY_HOME}/.ssh/authorized_keys" 2>/dev/null || echo 0)
+echo "  SSH-ключей у ${DEPLOY_USER}: ${KEY_COUNT}"
 
 # Убедиться что ключевые параметры установлены
 sudo sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
@@ -82,13 +98,24 @@ echo "  ✅ Fail2ban настроен (maxretry=3, bantime=1 час)"
 
 # --- UFW ---
 echo "[5/6] Настройка UFW..."
+
+# Определить фактический SSH-порт
+SSH_PORT=$(sudo sshd -T 2>/dev/null | grep "^port " | awk '{print $2}')
+SSH_PORT="${SSH_PORT:-22}"
+
 sudo ufw default deny incoming 2>/dev/null
 sudo ufw default allow outgoing 2>/dev/null
-sudo ufw allow 22/tcp 2>/dev/null
+sudo ufw allow "${SSH_PORT}/tcp" 2>/dev/null
 sudo ufw allow 80/tcp 2>/dev/null
 sudo ufw allow 443/tcp 2>/dev/null
 echo "y" | sudo ufw enable 2>/dev/null
-echo "  ✅ UFW включён (22, 80, 443)"
+
+if [ "${SSH_PORT}" != "22" ]; then
+    echo "  ✅ UFW включён (SSH:${SSH_PORT}, 80, 443)"
+    echo "  ⚠️  SSH работает на нестандартном порту ${SSH_PORT}"
+else
+    echo "  ✅ UFW включён (22, 80, 443)"
+fi
 
 # --- Пароль для VNC ---
 echo "[6/6] Установка пароля для ${DEPLOY_USER} (для VNC-аварийного доступа)..."
@@ -96,7 +123,8 @@ VNC_PASS=$(openssl rand -base64 18 | tr -d '/+=' | head -c 20)
 echo "${DEPLOY_USER}:${VNC_PASS}" | sudo chpasswd
 # Сохраняем пароль в файл (чтобы не потерять)
 SECRETS_DIR="/srv/openclaw/secrets"
-mkdir -p "${SECRETS_DIR}"
+sudo mkdir -p "${SECRETS_DIR}"
+sudo chown "${DEPLOY_USER}:${DEPLOY_USER}" "${SECRETS_DIR}"
 echo "VNC_USER=${DEPLOY_USER}" > "${SECRETS_DIR}/vnc-password.txt"
 echo "VNC_PASS=${VNC_PASS}" >> "${SECRETS_DIR}/vnc-password.txt"
 echo "CREATED=$(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> "${SECRETS_DIR}/vnc-password.txt"

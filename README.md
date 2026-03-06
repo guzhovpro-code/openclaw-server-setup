@@ -29,31 +29,18 @@
 
 ## Как начать
 
-### Вариант 1: Claude Code на сервере (рекомендуется)
+Откройте Claude Code и отправьте ему сообщение:
 
-Подключитесь к серверу по SSH и запустите:
+> Настрой мой VPS-сервер для OpenClaw по инструкциям из https://github.com/guzhovpro-code/openclaw-server-setup
+>
+> Данные сервера:
+> - IP: _(ваш IP из панели хостинга)_
+> - Логин: root
+> - Пароль: _(пароль из панели хостинга)_
 
-```bash
-# Установите Claude Code на сервере (если ещё нет)
-npm install -g @anthropic-ai/claude-code
+Claude Code прочитает инструкции из репозитория, подключится к серверу и проведёт через всю настройку. Вам нужно будет только отвечать на вопросы и подготовить API-ключ (Claude Code подскажет как).
 
-# Скачайте скрипты настройки
-git clone https://github.com/guzhovpro-code/openclaw-server-setup.git
-cd openclaw-server-setup
-
-# Запустите Claude Code — он прочитает инструкции и начнёт настройку
-claude
-```
-
-Claude Code прочитает файл `CLAUDE.md` и поведёт вас по шагам.
-
-### Вариант 2: Отправьте ссылку Claude Code
-
-Если Claude Code работает у вас локально — просто скажите ему:
-
-> "Настрой мой VPS для OpenClaw по инструкциям из https://github.com/guzhovpro-code/openclaw-server-setup. IP сервера: ХХХ.ХХХ.ХХХ.ХХХ, пароль root: ..."
-
-Claude Code подключится к серверу по SSH и выполнит всё сам.
+> **Где взять IP и пароль?** В панели вашего хостинга. Например, в Hostinger: VPS → Manage → SSH Access. Там будет IP-адрес и root-пароль.
 
 ## Что будет настроено
 

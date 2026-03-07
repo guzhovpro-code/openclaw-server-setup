@@ -282,6 +282,10 @@ API-ключи **НИКОГДА** не должны быть plaintext в opencl
 | Бэкап не работает | `bash /srv/openclaw/backup-config.sh` — посмотреть ошибки |
 | docker-setup.sh упал | Перезапусти: `cd /srv/openclaw/repo && bash docker-setup.sh` |
 | OpenClaw не отвечает после установки | Подожди 30 секунд (первый запуск долгий), потом `claw-health` |
+| `SecretProviderResolutionError: must be owned by uid=1000` | `sudo chown ubuntu:ubuntu /home/deploy/.openclaw/secrets/*` |
+| `gateway.auth.token: expected string, received object` | Это поле НЕ поддерживает SecretRef — используй plaintext строку |
+| Модель не вызывает tools / `read tool called without path` | Модель не поддерживает tool calling через агрегатор. Смени primary модель, удали сессию (`rm ~/.openclaw/agents/main/sessions/*.jsonl`) и перезапусти контейнер |
+| MiniMax M2.5 через Zen ломает инструменты | Известная проблема — MiniMax не формирует аргументы tool calls. Используй DeepSeek V3.2 (OpenRouter) как primary |
 
 ---
 
@@ -316,4 +320,7 @@ claw-restart   # перезапустить контейнер
 - [ ] Healthcheck проходит (`claw-health` → "HTTP 200")
 - [ ] Бэкап настроен (`crontab -l` → backup-config.sh)
 - [ ] Emergency-скрипты на месте (`ls /srv/openclaw/emergency-*.sh`)
-- [ ] (Опционально) Telegram-бот работает (`/start` в боте)
+- [ ] API-ключи через SecretRef, не plaintext (`ls -la ~/.openclaw/secrets/`)
+- [ ] Модели работают — бот отвечает и использует инструменты
+- [ ] Нет ошибок SecretRef в логах (`docker logs repo-openclaw-gateway-1 --tail 20`)
+- [ ] (Опционально) Telegram admin-бот работает (`/start` в боте)

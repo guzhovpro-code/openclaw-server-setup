@@ -1,5 +1,5 @@
 {
-  "_comment": "Шаблон мульти-провайдерной конфигурации OpenClaw. Замени <PLACEHOLDER> на реальные значения или используй SecretRef.",
+  "_comment": "Шаблон мульти-провайдерной конфигурации OpenClaw. Primary: DeepSeek V3.2 (OpenRouter). MiniMax M2.5 оставлен как резервная модель (проблемы с tool calling через Zen).",
 
   "secrets": {
     "providers": {
@@ -57,7 +57,7 @@
         "models": [
           {
             "id": "minimax-m2.5",
-            "name": "MiniMax M2.5 (primary, cheap)",
+            "name": "MiniMax M2.5 (reserve — tool calling broken via Zen)",
             "reasoning": true,
             "input": ["text"],
             "cost": { "input": 0.3, "output": 1.2 },
@@ -98,7 +98,7 @@
         "models": [
           {
             "id": "deepseek/deepseek-v3.2",
-            "name": "DeepSeek V3.2 (cheap fallback)",
+            "name": "DeepSeek V3.2 (primary)",
             "reasoning": false,
             "input": ["text"],
             "cost": { "input": 0.25, "output": 0.4 },
@@ -122,9 +122,8 @@
   "agents": {
     "defaults": {
       "model": {
-        "primary": "zen/minimax-m2.5",
+        "primary": "openrouter/deepseek/deepseek-v3.2",
         "fallbacks": [
-          "openrouter/deepseek/deepseek-v3.2",
           "zen/kimi-k2.5",
           "google/gemini-3.1-flash-lite-preview",
           "openai/gpt-5.4"

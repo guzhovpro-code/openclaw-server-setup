@@ -81,6 +81,28 @@ claw-start     # запустить
 claw-restart   # перезапустить
 ```
 
+### Шаг 5: Мульти-провайдерная конфигурация (опционально, рекомендуется)
+
+Настройте несколько провайдеров моделей для экономии и надёжности:
+
+| Провайдер | Роль | Цена |
+|-----------|------|------|
+| OpenCode Zen | Primary (MiniMax M2.5) | $0.30/$1.20 |
+| OpenRouter | Fallback (DeepSeek V3.2) | $0.25/$0.40 |
+| Google Gemini | Фоновые задачи | $0.25/$1.50 |
+| OpenAI | Last resort (GPT-5.4) | $2.50/$10.00 |
+
+Claude Code проведёт через настройку пошагово. API-ключи хранятся безопасно (SecretRef).
+
+### Секреты и API-ключи
+
+API-ключи **никогда** не хранятся в JSON-конфигах. Вместо этого используется система SecretRef:
+
+1. Ключ сохраняется в файл: `/home/deploy/.openclaw/secrets/<имя-ключа>` (chmod 600)
+2. В `openclaw.json` указывается ссылка: `{"source": "file", "provider": "<alias>", "id": "value"}`
+
+Подробнее — в `CLAUDE.md` (Этап 5).
+
 ### Telegram-бот для мониторинга (опционально)
 
 Хотите управлять сервером из Telegram и получать алерты при сбоях?
@@ -105,15 +127,17 @@ claw-restart   # перезапустить
 
 ```
 openclaw-server-setup/
-├── CLAUDE.md                    # Инструкции для Claude Code
-├── README.md                    # Этот файл
+├── CLAUDE.md                         # Инструкции для Claude Code
+├── README.md                         # Этот файл
 ├── modules/
-│   ├── 01-base.sh               # Подготовка сервера
-│   ├── 02-security.sh           # Безопасность
-│   ├── 03-docker.sh             # Docker
-│   └── 04-openclaw.sh           # OpenClaw
+│   ├── 01-base.sh                    # Подготовка сервера
+│   ├── 02-security.sh                # Безопасность
+│   ├── 03-docker.sh                  # Docker
+│   ├── 04-openclaw.sh                # OpenClaw Gateway
+│   └── 05-models.sh                  # Провайдеры моделей + SecretRef
 └── configs/
-    └── fail2ban-jail.local      # Настройки защиты от brute-force
+    ├── fail2ban-jail.local           # Настройки защиты от brute-force
+    └── openclaw-models-template.json # Шаблон конфигурации моделей
 ```
 
 ## Лицензия

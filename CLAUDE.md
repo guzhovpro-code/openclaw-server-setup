@@ -153,7 +153,84 @@ claw-health    # должен показать "HTTP 200"
 
 ---
 
-### Этап 5: Опциональное — Telegram Admin Bot
+### Этап 5: Мульти-провайдерная конфигурация моделей (Модуль 5)
+
+**Файл:** `modules/05-models.sh`
+**Запускать от:** `deploy`
+
+**Зачем:** По умолчанию OpenClaw использует один провайдер. Но для экономии и надёжности лучше настроить несколько провайдеров с fallback-цепочкой: если дешёвая модель недоступна, запрос идёт к следующей.
+
+Что делает:
+- Создаёт каталог секретов `/home/deploy/.openclaw/secrets/`
+- Собирает API-ключи от провайдеров (интерактивно)
+- Сохраняет ключи в файлы (chmod 600, owner ubuntu)
+- Готовит шаблон для openclaw.json
+
+**Перед запуском** объясни пользователю:
+> Сейчас мы настроим несколько провайдеров моделей. Это нужно чтобы:
+> 1. Экономить — дешёвые модели (MiniMax, DeepSeek) стоят в 8-10 раз меньше GPT-5
+> 2. Быть надёжным — если один провайдер упал, OpenClaw автоматически переключится на другой
+> 3. Безопасность — API-ключи будут храниться в отдельных файлах, а не в конфиге
+>
+> Тебе нужно будет получить API-ключи от провайдеров. Я подскажу где и как.
+
+**Провайдеры (рекомендуемый набор):**
+
+| Провайдер | Зачем | Цена (input/output за 1M токенов) | Где получить ключ |
+|-----------|-------|-----------------------------------|-------------------|
+| OpenCode Zen | Primary (MiniMax M2.5, Kimi K2.5) | $0.30/$1.20 | https://opencode.ai |
+| OpenRouter | Fallback (DeepSeek V3.2, Qwen3 Coder) | $0.25/$0.40 | https://openrouter.ai |
+| Google Gemini | Фоновые задачи (Flash Lite) | $0.25/$1.50 | https://aistudio.google.com |
+| OpenAI | Last resort (GPT-5.4) | $2.50/$10.00 | https://platform.openai.com |
+| DeepGram | Аудио-транскрипция | $200 free credits | https://console.deepgram.com |
+| Perplexity | Веб-поиск | $5/1000 запросов | https://perplexity.ai/settings/api |
+
+**После модуля 05** нужно вручную обновить `openclaw.json`:
+
+1. Используй шаблон из `configs/openclaw-models-template.json`
+2. Слей (merge) секцию `secrets`, `models`, `agents.defaults.model` в существующий openclaw.json
+3. Проверь hot reload: `docker logs repo-openclaw-gateway-1 --tail 5`
+
+**⚠️ КРИТИЧЕСКИ ВАЖНО — SecretRef:**
+
+API-ключи **НИКОГДА** не должны быть plaintext в openclaw.json.
+Всегда используй SecretRef:
+
+```json
+"apiKey": {"source": "file", "provider": "openai-key", "id": "value"}
+```
+
+Вместо:
+```json
+"apiKey": "sk-actual-key-value"
+```
+
+**Исключения** (ограничения схемы OpenClaw — эти поля принимают ТОЛЬКО строки):
+- `gateway.auth.token`
+- `channels.telegram.botToken`
+
+**Требования к файлам секретов:**
+- Каталог: `/home/deploy/.openclaw/secrets/`
+- Владелец: `ubuntu:ubuntu` (uid=1000 — тот же user что в контейнере)
+- Права: `600`
+- Без trailing newline: `echo -n "key" | sudo tee file`
+- Пути в openclaw.json — контейнерные: `/home/node/.openclaw/secrets/...`
+
+**Синхронизация agent-level конфига:**
+После изменения `models.providers` в openclaw.json — также обнови:
+`/home/deploy/.openclaw/agents/main/agent/models.json`
+Там своя копия провайдеров (может содержать дополнительные, например `claude-proxy`).
+
+**Частые ошибки:**
+- `must be owned by the current user (uid=1000)` → `sudo chown ubuntu:ubuntu` на файле
+- `gateway.auth.token: expected string, received object` → это поле не поддерживает SecretRef
+- Gemini через Zen → ошибка `promptTokenCount` → используй прямой Google API
+- DeepSeek через Zen → "Model not supported" → используй OpenRouter
+- Hot reload не сработал → `docker compose restart openclaw-gateway`
+
+---
+
+### Этап 6: Опциональное — Telegram Admin Bot
 
 **Не входит в этот репозиторий.** Отдельный проект.
 

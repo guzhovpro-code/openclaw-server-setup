@@ -1,0 +1,169 @@
+{
+  "_comment": "Шаблон мульти-провайдерной конфигурации OpenClaw. Замени <PLACEHOLDER> на реальные значения или используй SecretRef.",
+
+  "secrets": {
+    "providers": {
+      "openai-key": {
+        "source": "file",
+        "path": "/home/node/.openclaw/secrets/openai-api-key",
+        "mode": "singleValue"
+      },
+      "zen-key": {
+        "source": "file",
+        "path": "/home/node/.openclaw/secrets/zen-api-key",
+        "mode": "singleValue"
+      },
+      "google-key": {
+        "source": "file",
+        "path": "/home/node/.openclaw/secrets/google-api-key",
+        "mode": "singleValue"
+      },
+      "openrouter-key": {
+        "source": "file",
+        "path": "/home/node/.openclaw/secrets/openrouter-api-key",
+        "mode": "singleValue"
+      },
+      "perplexity-key": {
+        "source": "file",
+        "path": "/home/node/.openclaw/secrets/perplexity-api-key",
+        "mode": "singleValue"
+      }
+    }
+  },
+
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "openai": {
+        "baseUrl": "https://api.openai.com/v1",
+        "apiKey": { "source": "file", "provider": "openai-key", "id": "value" },
+        "api": "openai-responses",
+        "models": [
+          {
+            "id": "gpt-5.4",
+            "name": "GPT-5.4 (premium, last resort)",
+            "reasoning": true,
+            "input": ["text", "image"],
+            "cost": { "input": 2.5, "output": 10, "cacheRead": 0.5, "cacheWrite": 2.5 },
+            "contextWindow": 1000000,
+            "maxTokens": 32768
+          }
+        ]
+      },
+      "zen": {
+        "baseUrl": "https://opencode.ai/zen/v1",
+        "apiKey": { "source": "file", "provider": "zen-key", "id": "value" },
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "minimax-m2.5",
+            "name": "MiniMax M2.5 (primary, cheap)",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0.3, "output": 1.2 },
+            "contextWindow": 204800,
+            "maxTokens": 16384
+          },
+          {
+            "id": "kimi-k2.5",
+            "name": "Kimi K2.5 (long-context)",
+            "reasoning": true,
+            "input": ["text"],
+            "cost": { "input": 0.6, "output": 3.0 },
+            "contextWindow": 262144,
+            "maxTokens": 16384
+          }
+        ]
+      },
+      "google": {
+        "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "apiKey": { "source": "file", "provider": "google-key", "id": "value" },
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "gemini-3.1-flash-lite-preview",
+            "name": "Gemini 3.1 Flash Lite (background)",
+            "reasoning": false,
+            "input": ["text", "image"],
+            "cost": { "input": 0.25, "output": 1.5 },
+            "contextWindow": 1000000,
+            "maxTokens": 16384
+          }
+        ]
+      },
+      "openrouter": {
+        "baseUrl": "https://openrouter.ai/api/v1",
+        "apiKey": { "source": "file", "provider": "openrouter-key", "id": "value" },
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "deepseek/deepseek-v3.2",
+            "name": "DeepSeek V3.2 (cheap fallback)",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0.25, "output": 0.4 },
+            "contextWindow": 163840,
+            "maxTokens": 16384
+          },
+          {
+            "id": "qwen/qwen3-coder",
+            "name": "Qwen3 Coder (coding)",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0.22, "output": 1.0 },
+            "contextWindow": 262144,
+            "maxTokens": 16384
+          }
+        ]
+      }
+    }
+  },
+
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "zen/minimax-m2.5",
+        "fallbacks": [
+          "openrouter/deepseek/deepseek-v3.2",
+          "zen/kimi-k2.5",
+          "google/gemini-3.1-flash-lite-preview",
+          "openai/gpt-5.4"
+        ]
+      },
+      "compaction": {
+        "mode": "safeguard",
+        "reserveTokensFloor": 30000,
+        "memoryFlush": { "enabled": true, "softThresholdTokens": 30000 }
+      },
+      "contextPruning": {
+        "mode": "cache-ttl",
+        "ttl": "3h",
+        "keepLastAssistants": 3
+      }
+    }
+  },
+
+  "tools": {
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "perplexity",
+        "maxResults": 8,
+        "perplexity": {
+          "apiKey": { "source": "file", "provider": "perplexity-key", "id": "value" }
+        }
+      }
+    },
+    "media": {
+      "audio": {
+        "enabled": true,
+        "maxBytes": 20000000,
+        "language": "ru",
+        "models": [
+          { "provider": "deepgram", "model": "nova-3" }
+        ],
+        "echoTranscript": false
+      }
+    }
+  }
+}

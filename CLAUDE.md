@@ -26,29 +26,46 @@
    - Логин и пароль root (или SSH-ключ)
    - Какой хостинг (Hostinger, DigitalOcean, Hetzner и т.д.)
 
-4. **Помоги получить API-ключ LLM-провайдера.** Объясни пошагово:
+4. **Помоги настроить доступ к LLM-провайдеру.** Спроси у пользователя:
 
-   Скажи пользователю:
-   > Для работы OpenClaw нужен API-ключ от LLM-провайдера. Вот как его получить:
+   > Для работы OpenClaw нужен доступ к LLM-модели. Есть два варианта:
+   >
+   > **Вариант А (рекомендуется): OpenAI Codex через ChatGPT Plus**
+   > Если у тебя есть подписка ChatGPT Plus ($20/мес) — ты можешь использовать GPT-5.3 Codex **бесплатно** через OAuth-авторизацию. Не нужно покупать отдельные API-кредиты.
+   >
+   > **Вариант Б: API-ключ от провайдера**
+   > Если нет подписки — нужен API-ключ. Я помогу получить.
 
-   **OpenAI (рекомендуется, лучшая совместимость с OpenClaw):**
+   **Если пользователь выбрал Вариант А (OpenAI Codex OAuth):**
+   - OAuth-авторизация будет настроена на Этапе 4 через `openclaw onboard --auth-choice openai-codex`
+   - Пользователю понадобится открыть ссылку в браузере и авторизоваться в OpenAI
+   - Если команда не работает на VPS (нет браузера), см. раздел «OAuth на VPS без браузера» ниже
+   - Перейди к пункту 5
+
+   **Если пользователь выбрал Вариант Б (API-ключ), помоги получить:**
+
+   **OpenAI (лучшая совместимость с OpenClaw):**
    1. Открой https://platform.openai.com/api-keys
    2. Войди или зарегистрируйся
    3. Нажми «Create new secret key»
    4. Скопируй ключ (начинается с `sk-...`) — он покажется ОДИН раз
    5. Пополни баланс: https://platform.openai.com/settings/organization/billing/overview (минимум $5)
 
-   **Anthropic (Claude):**
-   1. Открой https://console.anthropic.com/settings/keys
+   **OpenRouter (доступ к десяткам моделей через один ключ):**
+   1. Открой https://openrouter.ai/keys
    2. Войди или зарегистрируйся
-   3. Нажми «Create Key»
-   4. Скопируй ключ
-   5. Пополни баланс: https://console.anthropic.com/settings/plans
+   3. Создай ключ, скопируй (начинается с `sk-or-...`)
+   4. Пополни баланс (минимум $5)
 
    **Google Gemini:**
    1. Открой https://aistudio.google.com/app/apikey
    2. Нажми «Create API key»
    3. Выбери проект и скопируй ключ
+
+   **Anthropic (Claude):**
+   1. Открой https://console.anthropic.com/settings/keys
+   2. Нажми «Create Key», скопируй ключ
+   3. Пополни баланс: https://console.anthropic.com/settings/plans
 
    Попроси пользователя скинуть готовый ключ когда получит. **ВАЖНО:** Не сохраняй API-ключи в файлы репозитория. Они будут использованы только в интерактивном `docker-setup.sh`.
 
@@ -176,14 +193,50 @@ claw-health    # должен показать "HTTP 200"
 
 **Провайдеры (рекомендуемый набор):**
 
-| Провайдер | Зачем | Цена (input/output за 1M токенов) | Где получить ключ |
-|-----------|-------|-----------------------------------|-------------------|
-| OpenCode Zen | Primary (MiniMax M2.5, Kimi K2.5) | $0.30/$1.20 | https://opencode.ai |
+| Провайдер | Зачем | Цена (input/output за 1M токенов) | Где получить |
+|-----------|-------|-----------------------------------|--------------|
+| **OpenAI Codex** | Primary (GPT-5.3 Codex) | **Бесплатно** (ChatGPT Plus) | OAuth через OpenClaw |
 | OpenRouter | Fallback (DeepSeek V3.2, Qwen3 Coder) | $0.25/$0.40 | https://openrouter.ai |
+| OpenCode Zen | Fallback (Kimi K2.5) | $0.30/$1.20 | https://opencode.ai |
 | Google Gemini | Фоновые задачи (Flash Lite) | $0.25/$1.50 | https://aistudio.google.com |
 | OpenAI | Last resort (GPT-5.4) | $2.50/$10.00 | https://platform.openai.com |
 | DeepGram | Аудио-транскрипция | $200 free credits | https://console.deepgram.com |
 | Perplexity | Веб-поиск | $5/1000 запросов | https://perplexity.ai/settings/api |
+
+**OpenAI Codex OAuth — настройка:**
+
+Если пользователь выбрал Codex (рекомендуется для подписчиков ChatGPT Plus):
+
+1. Запусти: `docker exec -it repo-openclaw-gateway-1 openclaw onboard --auth-choice openai-codex`
+2. Если TUI не работает (VPS без графики), используй прямой Node.js вызов:
+   ```bash
+   # Внутри контейнера от /app:
+   docker exec -i repo-openclaw-gateway-1 node -e "
+   import('${await import.meta.resolve('@mariozechner/pi-ai')}')
+     .then(m => m.loginOpenAICodex({
+       onAuth: async ({url}) => { console.log('OPEN THIS URL:', url); },
+       onPrompt: async () => { /* read redirect URL from stdin */ }
+     }))
+   "
+   ```
+3. Пользователь открывает URL в браузере, авторизуется в OpenAI
+4. Браузер редиректит на `localhost:1455/auth/callback?code=...` — ошибка ERR_CONNECTION_REFUSED **это нормально**
+5. Пользователь копирует URL из адресной строки и передаёт обратно
+6. Записать credentials в `auth-profiles.json`:
+   ```json
+   {
+     "openai-codex:email@gmail.com": {
+       "type": "oauth",
+       "provider": "openai-codex",
+       "access": "<jwt_token>",
+       "refresh": "<refresh_token>",
+       "expires": <unix_timestamp>,
+       "accountId": "<user_id>"
+     }
+   }
+   ```
+7. Установить модель: `docker exec repo-openclaw-gateway-1 openclaw models set openai-codex/gpt-5.3-codex`
+8. Токен живёт ~10 дней, обновляется автоматически через refresh token
 
 **После модуля 05** нужно вручную обновить `openclaw.json`:
 
@@ -285,7 +338,49 @@ API-ключи **НИКОГДА** не должны быть plaintext в opencl
 | `SecretProviderResolutionError: must be owned by uid=1000` | `sudo chown ubuntu:ubuntu /home/deploy/.openclaw/secrets/*` |
 | `gateway.auth.token: expected string, received object` | Это поле НЕ поддерживает SecretRef — используй plaintext строку |
 | Модель не вызывает tools / `read tool called without path` | Модель не поддерживает tool calling через агрегатор. Смени primary модель, удали сессию (`rm ~/.openclaw/agents/main/sessions/*.jsonl`) и перезапусти контейнер |
-| MiniMax M2.5 через Zen ломает инструменты | Известная проблема — MiniMax не формирует аргументы tool calls. Используй DeepSeek V3.2 (OpenRouter) как primary |
+| MiniMax M2.5 через Zen ломает инструменты | Известная проблема — MiniMax не формирует аргументы tool calls. Используй GPT-5.3 Codex или DeepSeek V3.2 как primary |
+| Бот называет себя старой моделью после смены | Три слоя кеширования (см. чеклист ниже). Нужно пройти все 5 шагов |
+| OAuth токен openai-codex истёк | Повторить OAuth flow. Токен живёт ~10 дней, refresh token обновляет автоматически. Если refresh не сработал — заново авторизовать |
+| `No provider plugins found` при auth login | Для openai-codex нет auth plugin — используй `onboard --auth-choice openai-codex` или прямой Node.js вызов (см. Этап 5) |
+
+---
+
+## Чеклист смены primary модели (5 обязательных шагов)
+
+**⚠️ ВАЖНО:** Смена модели требует обновления ТРЁХ независимых кешей. Пропуск любого шага → бот продолжит считать себя старой моделью.
+
+1. **Установить модель в конфиге:**
+   ```bash
+   docker exec repo-openclaw-gateway-1 openclaw models set <provider/model>
+   ```
+
+2. **Перезапустить gateway** (gateway кеширует модель при старте):
+   ```bash
+   docker restart repo-openclaw-gateway-1
+   ```
+
+3. **Очистить кеш модели в sessions.json:**
+   ```bash
+   # Убрать поле "model" из всех сессий
+   sudo python3 -c "
+   import json
+   f = '/home/deploy/.openclaw/agents/main/sessions/sessions.json'
+   d = json.load(open(f))
+   for s in d.values():
+       if isinstance(s, dict) and 'model' in s:
+           del s['model']
+   json.dump(d, open(f, 'w'), indent=2)
+   "
+   ```
+
+4. **Обновить workspace/MEMORY.md** — бот читает этот файл и повторяет информацию о себе:
+   ```bash
+   sudo sed -i 's/Primary: .*/Primary: НОВАЯ_МОДЕЛЬ/' /home/deploy/.openclaw/workspace/MEMORY.md
+   ```
+
+5. **Пользователь отправляет `/new` боту в Telegram** — создаёт новую сессию без отравленного контекста старой модели
+
+**Без шагов 3-5** бот будет продолжать идентифицировать себя как старую модель, даже если фактически работает на новой.
 
 ---
 
@@ -321,6 +416,7 @@ claw-restart   # перезапустить контейнер
 - [ ] Бэкап настроен (`crontab -l` → backup-config.sh)
 - [ ] Emergency-скрипты на месте (`ls /srv/openclaw/emergency-*.sh`)
 - [ ] API-ключи через SecretRef, не plaintext (`ls -la ~/.openclaw/secrets/`)
+- [ ] OAuth-токен Codex действителен (`docker exec repo-openclaw-gateway-1 openclaw models status` → "ok expires in Xd")
 - [ ] Модели работают — бот отвечает и использует инструменты
 - [ ] Нет ошибок SecretRef в логах (`docker logs repo-openclaw-gateway-1 --tail 20`)
 - [ ] (Опционально) Telegram admin-бот работает (`/start` в боте)

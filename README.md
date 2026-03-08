@@ -19,13 +19,21 @@
    - Минимум: 1 ГБ RAM, 20 ГБ диска, 1 vCPU
    - Рекомендуется: 2 ГБ RAM, 40 ГБ диска
 2. **Claude Code** — [установите](https://docs.anthropic.com/en/docs/claude-code/overview), если ещё нет
-3. **API-ключ от LLM-провайдера** — OpenClaw использует LLM для работы. Claude Code подскажет как получить ключ, но можно подготовить заранее:
+3. **Доступ к LLM-провайдеру** — OpenClaw использует LLM для работы. Есть два варианта:
+
+   **Вариант А: OpenAI Codex через подписку ChatGPT Plus (рекомендуется)**
+   - Если у вас есть подписка ChatGPT Plus ($20/мес) — GPT-5.3 Codex доступен **бесплатно** через OAuth
+   - Не нужно покупать отдельные API-кредиты
+   - Claude Code поможет настроить OAuth-авторизацию
+
+   **Вариант Б: API-ключ от провайдера**
 
    | Провайдер | Где получить ключ | Примечание |
    |-----------|-------------------|------------|
-   | **OpenAI** (рекомендуется) | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | Лучшая совместимость с OpenClaw |
-   | Anthropic | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) | |
+   | **OpenAI** | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | Лучшая совместимость с OpenClaw |
+   | OpenRouter | [openrouter.ai/keys](https://openrouter.ai/keys) | Десятки моделей через один ключ |
    | Google Gemini | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) | |
+   | Anthropic | [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys) | |
 
    Claude Code проведёт через получение ключа пошагово, если не знаете как
 
@@ -85,14 +93,15 @@ claw-restart   # перезапустить
 
 Настройте несколько провайдеров моделей для экономии и надёжности:
 
-| Провайдер | Роль | Цена |
-|-----------|------|------|
-| OpenCode Zen | Primary (MiniMax M2.5) | $0.30/$1.20 |
-| OpenRouter | Fallback (DeepSeek V3.2) | $0.25/$0.40 |
-| Google Gemini | Фоновые задачи | $0.25/$1.50 |
-| OpenAI | Last resort (GPT-5.4) | $2.50/$10.00 |
+| Провайдер | Роль | Цена | Примечание |
+|-----------|------|------|------------|
+| **OpenAI Codex** | Primary (GPT-5.3 Codex) | **Бесплатно** | Через ChatGPT Plus подписку (OAuth) |
+| OpenRouter | Fallback (DeepSeek V3.2) | $0.25/$0.40 | Агрегатор десятков моделей |
+| OpenCode Zen | Fallback (Kimi K2.5) | $0.30/$1.20 | Быстрые дешёвые модели |
+| Google Gemini | Фоновые задачи | $0.25/$1.50 | Flash Lite для лёгких задач |
+| OpenAI | Last resort (GPT-5.4) | $2.50/$10.00 | API ключ, отдельно от Codex |
 
-Claude Code проведёт через настройку пошагово. API-ключи хранятся безопасно (SecretRef).
+Claude Code проведёт через настройку пошагово. API-ключи хранятся безопасно (SecretRef), OAuth-токены обновляются автоматически.
 
 ### Секреты и API-ключи
 
@@ -122,6 +131,8 @@ API-ключи **никогда** не хранятся в JSON-конфигах
 | Забыл VNC-пароль | `cat /srv/openclaw/secrets/vnc-password.txt` |
 | OpenClaw не отвечает | `claw-logs` — посмотрите ошибки |
 | Нужно откатить SSH | `sudo cp /etc/ssh/sshd_config.backup.* /etc/ssh/sshd_config && sudo systemctl reload ssh` |
+| Бот называет себя старой моделью | Смена модели = 5 шагов. Подробности в CLAUDE.md (Этап 5) |
+| OAuth токен истёк | Повторить OAuth-авторизацию через `openclaw onboard --auth-choice openai-codex` |
 
 ## Структура файлов
 

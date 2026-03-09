@@ -123,6 +123,26 @@ API-ключи **никогда** не хранятся в JSON-конфигах
 - Автоматические уведомления если контейнер упал, диск заполнен или кто-то атакует SSH
 - Отчёт о состоянии сервера по команде
 
+## Интеграции (опционально)
+
+После базовой установки (шаги 1-5) можно подключить дополнительные модули. Каждый модуль **независим** — устанавливайте только то, что нужно. Запустите интерактивный выбор:
+
+```bash
+bash modules/06-integrations.sh
+```
+
+Или установите нужные модули напрямую: `bash integrations/<модуль>.sh`
+
+| Интеграция | Что даёт | Нужно подготовить |
+|------------|----------|-------------------|
+| **Мониторинг** | Healthcheck каждые 5 мин, авто-бэкап конфигов на GitHub, Telegram-алерты при сбоях (контейнер упал, диск полный, мало RAM) | Telegram-бот (через @BotFather), Chat ID, приватный GitHub-репо |
+| **Notion** | Подключение бота к Notion — базы Sync Hub, Tasks, Resources для совместной работы CC и бота | Notion Integration Token (https://notion.so/my-integrations) |
+| **MongoDB** | Локальная MongoDB 8.0 с авторизацией — для operational_logs, хранения данных бота, аналитики | Два пароля (admin и openclaw) |
+| **n8n** | Платформа автоматизации workflow — Instagram, транскрипция аудио, кастомные цепочки. Docker-контейнер с Traefik (HTTPS) или localhost | Домен (если нужен HTTPS), пароль для Basic Auth |
+| **CC Bridge** | Claude Code CLI агент прямо на сервере — выполняет сложные задачи из Telegram. systemd-сервис, очередь задач, автоматические отчёты | OAuth-токен Claude (через `claude setup-token` на локальной машине) |
+
+**Все модули идемпотентны** — безопасно запускать повторно для обновления или переконфигурации.
+
 ## Если что-то пошло не так
 
 | Проблема | Что делать |
@@ -145,7 +165,14 @@ openclaw-server-setup/
 │   ├── 02-security.sh                # Безопасность
 │   ├── 03-docker.sh                  # Docker
 │   ├── 04-openclaw.sh                # OpenClaw Gateway
-│   └── 05-models.sh                  # Провайдеры моделей + SecretRef
+│   ├── 05-models.sh                  # Провайдеры моделей + SecretRef
+│   └── 06-integrations.sh            # Интерактивный выбор интеграций
+├── integrations/
+│   ├── monitoring.sh                 # Healthcheck + бэкап + Telegram-алерты
+│   ├── notion.sh                     # Notion API + базы данных
+│   ├── mongodb.sh                    # MongoDB 8.0 + авторизация
+│   ├── n8n.sh                        # n8n автоматизация (Docker)
+│   └── cc-bridge.sh                  # Claude Code CLI агент (systemd)
 └── configs/
     ├── fail2ban-jail.local           # Настройки защиты от brute-force
     └── openclaw-models-template.json # Шаблон конфигурации моделей

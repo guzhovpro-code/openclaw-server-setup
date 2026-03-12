@@ -76,45 +76,44 @@ else
     warn "Container has no memory limit"
 fi
 
-# ═══ 3. CLAUDE PROXY ═══
-section "3. CLAUDE MAX API PROXY"
+# ═══ 3. 9ROUTER (AI MODEL ROUTER) ═══
+section "3. 9ROUTER"
 
-if pgrep -f "claude-max-api-proxy" >/dev/null 2>&1; then
-    PROXY_PID=$(pgrep -f "claude-max-api-proxy" | head -1)
-    pass "Claude proxy running (PID: $PROXY_PID)"
+ROUTER_URL="http://127.0.0.1:20128/v1/models"
+
+if pgrep -f "9router" >/dev/null 2>&1; then
+    ROUTER_PID=$(pgrep -f "9router" | head -1)
+    pass "9router running (PID: $ROUTER_PID)"
 else
-    fail "Claude proxy NOT running"
+    fail "9router NOT running"
 fi
 
-if ss -tlnp | grep -q ":3456"; then
-    pass "Port 3456 listening"
+if ss -tlnp | grep -q ":20128"; then
+    pass "Port 20128 listening"
 else
-    fail "Port 3456 NOT listening"
+    fail "Port 20128 NOT listening"
 fi
 
-PROXY_RESP=$(curl -s -o /dev/null -w "%{http_code}" --max-time 5 http://localhost:3456/v1/models 2>/dev/null || echo "000")
-if [ "$PROXY_RESP" = "200" ]; then
-    pass "Proxy responds on localhost (HTTP $PROXY_RESP)"
+ROUTER_RESP=$(curl -s --max-time 5 "$ROUTER_URL" 2>/dev/null)
+if [ $? -eq 0 ] && echo "$ROUTER_RESP" | python3 -c "import json,sys; d=json.load(sys.stdin); print(len(d.get('data',[])))" 2>/dev/null | grep -qE '^[1-9]'; then
+    MODEL_COUNT=$(echo "$ROUTER_RESP" | python3 -c "import json,sys; print(len(json.load(sys.stdin).get('data',[])))")
+    pass "9router responds ($MODEL_COUNT models available)"
 else
-    warn "Proxy localhost response: HTTP $PROXY_RESP"
+    fail "9router NOT responding or no models"
 fi
 
-DOCKER_IP=$(docker inspect repo-openclaw-gateway-1 --format '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' 2>/dev/null | head -c 20)
-if [ -n "$DOCKER_IP" ]; then
-    DOCKER_RESP=$(docker exec repo-openclaw-gateway-1 wget -q -O /dev/null --timeout=5 "http://${DOCKER_IP}:3456/v1/models" 2>&1 && echo "OK" || echo "FAIL")
-    if [ "$DOCKER_RESP" = "OK" ]; then
-        pass "Proxy reachable from container via $DOCKER_IP"
-    else
-        fail "Proxy NOT reachable from container"
-    fi
+# Check Docker can reach 9router
+DOCKER_RESP=$(docker exec repo-openclaw-gateway-1 wget -q -O /dev/null --timeout=5 "http://host.docker.internal:20128/v1/models" 2>&1 && echo "OK" || echo "FAIL")
+if [ "$DOCKER_RESP" = "OK" ]; then
+    pass "9router reachable from container"
+else
+    fail "9router NOT reachable from container"
 fi
 
-if (crontab -l 2>/dev/null; sudo crontab -l 2>/dev/null) 2>/dev/null | grep -q "claude-proxy\|claude_proxy"; then
-    pass "Claude proxy autostart (cron)"
-elif systemctl is-enabled claude-proxy 2>/dev/null | grep -q "enabled"; then
-    pass "Claude proxy autostart (systemd)"
+if systemctl is-enabled 9router 2>/dev/null | grep -q "enabled"; then
+    pass "9router autostart (systemd)"
 else
-    warn "Claude proxy has NO autostart configured"
+    warn "9router has NO autostart configured"
 fi
 
 # ═══ 4. MODELS & PROVIDERS ═══

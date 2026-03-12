@@ -272,7 +272,7 @@ API-ключи **НИКОГДА** не должны быть plaintext в opencl
 **Синхронизация agent-level конфига:**
 После изменения `models.providers` в openclaw.json — также обнови:
 `/home/deploy/.openclaw/agents/main/agent/models.json`
-Там своя копия провайдеров (может содержать дополнительные, например `claude-proxy`).
+Там своя копия провайдеров (может содержать дополнительные, например `9router`).
 
 **Частые ошибки:**
 - `must be owned by the current user (uid=1000)` → `sudo chown ubuntu:ubuntu` на файле

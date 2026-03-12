@@ -140,6 +140,8 @@ bash modules/06-integrations.sh
 | **MongoDB** | Локальная MongoDB 8.0 с авторизацией — для operational_logs, хранения данных бота, аналитики | Два пароля (admin и openclaw) |
 | **n8n** | Платформа автоматизации workflow — Instagram, транскрипция аудио, кастомные цепочки. Docker-контейнер с Traefik (HTTPS) или localhost | Домен (если нужен HTTPS), пароль для Basic Auth |
 | **CC Bridge** | Claude Code CLI агент прямо на сервере — выполняет сложные задачи из Telegram. systemd-сервис, очередь задач, автоматические отчёты | OAuth-токен Claude (через `claude setup-token` на локальной машине) |
+| **Диагностика** | Полная проверка системы (30+ тестов): инфра, Docker, прокси, модели, финбезопасность, бэкапы, маршрутизация. Ночной cron | Нет |
+| **Failover Monitor** | Отслеживает переключения моделей из логов. Уведомление в Telegram при смене primary модели | Telegram-бот |
 
 **Все модули идемпотентны** — безопасно запускать повторно для обновления или переконфигурации.
 
@@ -172,7 +174,9 @@ openclaw-server-setup/
 │   ├── notion.sh                     # Notion API + базы данных
 │   ├── mongodb.sh                    # MongoDB 8.0 + авторизация
 │   ├── n8n.sh                        # n8n автоматизация (Docker)
-│   └── cc-bridge.sh                  # Claude Code CLI агент (systemd)
+│   ├── cc-bridge.sh                  # Claude Code CLI агент (systemd)
+│   ├── diagnostic.sh                 # Полная диагностика системы (30 проверок)
+│   └── model-failover-monitor.sh     # Мониторинг переключения моделей
 └── configs/
     ├── fail2ban-jail.local           # Настройки защиты от brute-force
     └── openclaw-models-template.json # Шаблон конфигурации моделей
